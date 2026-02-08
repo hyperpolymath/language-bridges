@@ -1,0 +1,10 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+= language-bridges Roadmap
+
+FFI bridges between languages via Zig. Completion: 20%.
+
+== Goals
+* [ ] Complete core functionality
+* [ ] Add test coverage
+* [ ] Write documentation
+* [ ] Stable 1.0 release
