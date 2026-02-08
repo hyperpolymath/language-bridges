@@ -1,0 +1,15 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2025 Hyperpolymath Contributors
+= Memory Model
+
+== Context-based Allocation (recommended)
+
+All allocations for decoded objects are owned by a `BebopCtx*`.
+
+* `bebop_ctx_new()` creates a context (arena/allocator)
+* `bebop_decode_*()` populates output structs with pointers owned by the context
+* `bebop_free_*()` releases per-object allocations where meaningful
+* `bebop_ctx_reset()` clears the arena for reuse (high throughput IIoT)
+* `bebop_ctx_free()` destroys the context
+
+This avoids global state and supports one context per connection/thread.

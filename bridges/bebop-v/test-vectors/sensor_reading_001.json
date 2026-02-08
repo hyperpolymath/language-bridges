@@ -1,0 +1,51 @@
+{
+  "name": "sensor_reading_001",
+  "description": "Basic SensorReading with temperature data and one metadata entry",
+  "schema": "SensorReading",
+  "input": {
+    "timestamp": 2000000000,
+    "sensorId": "temp-001",
+    "sensorType": 1,
+    "value": 23.5,
+    "unit": "C",
+    "location": "floor-1",
+    "metadata": {
+      "status": "ok"
+    }
+  },
+  "wire_bytes_hex": "0100943577000000000208000000746573702d30303103010004000000000000803740050100000043060700000066666c6f6f722d310701000000060000007374617475730200000006f6b00",
+  "wire_format_annotated": [
+    "01                        # field 1: timestamp",
+    "00 94 35 77 00 00 00 00   # timestamp = 2000000000 (u64 LE)",
+    "02                        # field 2: sensorId",
+    "08 00 00 00               # string length = 8",
+    "74 65 6d 70 2d 30 30 31   # 'temp-001'",
+    "03                        # field 3: sensorType",
+    "01 00                     # sensorType = 1 (Temperature, u16 LE)",
+    "04                        # field 4: value",
+    "00 00 00 00 00 80 37 40   # value = 23.5 (f64 LE)",
+    "05                        # field 5: unit",
+    "01 00 00 00               # string length = 1",
+    "43                        # 'C'",
+    "06                        # field 6: location",
+    "07 00 00 00               # string length = 7",
+    "66 6c 6f 6f 72 2d 31      # 'floor-1'",
+    "07                        # field 7: metadata",
+    "01 00 00 00               # map count = 1",
+    "06 00 00 00               # key length = 6",
+    "73 74 61 74 75 73         # 'status'",
+    "02 00 00 00               # value length = 2",
+    "6f 6b                     # 'ok'",
+    "00                        # end of message"
+  ],
+  "expected_decode": {
+    "timestamp": 2000000000,
+    "sensor_id": "temp-001",
+    "sensor_type": 1,
+    "value": 23.5,
+    "unit": "C",
+    "location": "floor-1",
+    "metadata_count": 1
+  },
+  "round_trip": true
+}

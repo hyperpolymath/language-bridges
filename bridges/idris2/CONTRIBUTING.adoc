@@ -1,0 +1,49 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+= Contributing to idris2-zig-ffi
+
+Thank you for your interest in contributing!
+
+== Ways to Contribute
+
+* Report bugs and issues
+* Improve documentation
+* Add tests
+* Add support for new platforms
+* Improve type conversion coverage
+
+== Development Setup
+
+[source,bash]
+----
+# Clone the repository
+git clone https://github.com/hyperpolymath/idris2-zig-ffi.git
+cd idris2-zig-ffi
+
+# Build
+zig build
+
+# Run tests
+zig build test
+
+# Generate documentation
+zig build docs
+----
+
+== Code Style
+
+* Run `zig fmt` before committing
+* Keep functions small and focused
+* Document public APIs with doc comments
+* Add tests for new functionality
+
+== Pull Request Process
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run `zig build test`
+5. Submit a pull request
+
+== License
+
+By contributing, you agree that your contributions will be licensed under Palimpsest-MPL-1.0.

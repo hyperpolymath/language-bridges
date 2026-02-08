@@ -1,0 +1,21 @@
+; SPDX-License-Identifier: AGPL-3.0-or-later
+(lang dune 3.0)
+(name ocaml_zig_ffi)
+(version 0.1.0)
+
+(generate_opam_files true)
+
+(source (github hyperpolymath/ocaml-zig-ffi))
+(license AGPL-3.0-or-later)
+(authors "Hyperpolymath")
+(maintainers "hyperpolymath@users.noreply.github.com")
+
+(package
+ (name ocaml_zig_ffi)
+ (synopsis "OCaml bindings for Zig FFI - bidirectional interop")
+ (description "Type-safe bidirectional FFI between OCaml and Zig libraries")
+ (depends
+  (ocaml (>= 4.14))
+  (ctypes (>= 0.20))
+  (ctypes-foreign (>= 0.18))
+  dune))

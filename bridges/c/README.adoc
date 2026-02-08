@@ -1,0 +1,7 @@
+= Zig ↔ C FFI Bridge
+
+Minimal bidirectional FFI for legacy C integration.
+
+== License
+
+PMLP-1.0-or-later

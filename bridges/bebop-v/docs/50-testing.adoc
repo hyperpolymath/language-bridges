@@ -1,0 +1,21 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2025 Hyperpolymath Contributors
+= Testing
+
+== Recommended Tests
+
+=== Golden Vectors
+
+Known payload bytes + expected decoded JSON-ish structure.
+
+=== Round-trip
+
+`encode(decode(payload)) == canonical(payload)` (where canonicalization exists)
+
+=== Fuzz
+
+Fuzz decode inputs for crashes (where safe).
+
+=== ABI Layout Checks
+
+Size/alignment checks in Zig/Rust against the header.

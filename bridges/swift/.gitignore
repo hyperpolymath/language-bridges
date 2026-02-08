@@ -1,0 +1,20 @@
+# Zig
+.zig-cache/
+zig-out/
+
+# macOS
+.DS_Store
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+
+# Build artifacts
+*.a
+*.dylib
+*.so
+*.o
+*.xcframework/
+
+# IDE
+.vscode/
+.idea/

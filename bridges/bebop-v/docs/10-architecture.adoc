@@ -1,0 +1,27 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2025 Hyperpolymath Contributors
+= Architecture
+
+== Layers
+
+=== 1. V Application
+
+* Business logic
+* Networking
+* Calls the FFI boundary
+
+=== 2. FFI Contract (C ABI)
+
+* `include/bebop_v_ffi.h`
+* Stable struct layouts and functions
+* Explicit ownership/lifetimes
+
+=== 3. Implementation (Zig / Rust)
+
+* Calls canonical Bebop tooling/libraries
+* Performs decode/encode
+* Allocates outputs using context-owned memory
+
+=== 4. Bebop Compiler / Runtime
+
+* `bebopc --lang c` generated code, or official library bindings

@@ -1,0 +1,320 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2025 Hyperpolymath Contributors
+= Bebop-V-FFI: A Modern Approach to Language Bindings for IIoT
+:toc: left
+:toclevels: 3
+:icons: font
+:source-highlighter: rouge
+
+[abstract]
+== Abstract
+
+This paper presents `bebop-v-ffi`, a Foreign Function Interface design that connects
+the Bebop binary serialization format to the V programming language via a stable C ABI
+implemented in Zig. We argue that this architecture—defining a language-agnostic contract
+and implementing it in a modern systems language—offers significant advantages over
+traditional approaches for Industrial IoT edge computing.
+
+== Introduction
+
+Industrial IoT (IIoT) demands a unique combination of requirements: microsecond-level
+latency, minimal memory footprint, offline operation, and multi-language interoperability.
+Binary serialization formats like https://bebop.sh[Bebop] address the performance needs,
+but bridging these formats to application languages remains challenging.
+
+This paper describes an FFI architecture that:
+
+1. Defines a *stable C ABI contract* as the core deliverable
+2. Implements that contract in *Zig* (not C)
+3. Exposes bindings to *V*, a pragmatic systems language ideal for edge devices
+4. Enables *plug-compatible implementations* in other languages (Rust, etc.)
+
+== Why V for IIoT?
+
+https://vlang.io[V] is a systems programming language designed for reliability and simplicity:
+
+[cols="1,3"]
+|===
+|Feature |Benefit for IIoT
+
+|*Fast compilation*
+|~1 second builds enable rapid iteration on constrained devices
+
+|*Small binaries*
+|~1MB executables fit in ESP32's 4MB flash
+
+|*No GC pauses*
+|Predictable latency for real-time sensor processing
+
+|*C interop*
+|Direct FFI with existing C libraries and system calls
+
+|*Readable syntax*
+|Maintainable firmware code without Rust's complexity
+|===
+
+V fills the gap between C's lack of safety and Rust's learning curve, making it
+ideal for teams building production IIoT firmware.
+
+== Why Zig Instead of C?
+
+The traditional approach would implement the FFI layer in C. We chose Zig for
+several compelling reasons:
+
+=== 1. C ABI Without C
+
+Zig exports C-compatible functions directly:
+
+[source,zig]
+----
+export fn bebop_ctx_new() callconv(.C) ?*BebopCtx {
+    // Pure Zig implementation
+}
+----
+
+No C compiler, no header generation, no build system complexity—Zig produces
+a `.so` that any C-compatible FFI can consume.
+
+=== 2. Safety Without Runtime Cost
+
+Zig provides:
+
+* Compile-time bounds checking
+* Optional types (no null pointer exceptions)
+* Explicit error handling
+* No hidden allocations
+
+All without runtime overhead. The resulting binary is as fast as C but safer to write.
+
+=== 3. Cross-Compilation as a First-Class Feature
+
+[source,bash]
+----
+zig build -Dtarget=aarch64-linux    # ARM64 for Raspberry Pi
+zig build -Dtarget=riscv64-linux    # RISC-V for emerging SBCs
+----
+
+One command produces binaries for any supported target—critical for IIoT where
+devices span architectures.
+
+=== 4. Seamless C Interop
+
+Zig can import C headers directly, call C functions, and link C libraries.
+If we need to wrap existing Bebop C code, Zig handles it gracefully.
+
+=== 5. Better Tooling Than C
+
+* Built-in test framework
+* Built-in documentation generator
+* Built-in package manager (experimental)
+* Consistent, readable error messages
+
+== The FFI Contract
+
+The core innovation is treating the *C ABI as the primary deliverable*:
+
+[source]
+----
+┌─────────────────────────────────────────────────────┐
+│                V Application                         │
+│           (v/bebop_bridge.v)                        │
+└─────────────────────┬───────────────────────────────┘
+                      │ calls
+                      ▼
+┌─────────────────────────────────────────────────────┐
+│              C ABI Contract                          │
+│         (include/bebop_v_ffi.h)                     │
+│                                                      │
+│  • BebopCtx* bebop_ctx_new()                        │
+│  • void bebop_ctx_free(BebopCtx*)                   │
+│  • int32_t bebop_decode_sensor_reading(...)         │
+│  • size_t bebop_encode_batch_readings(...)          │
+└─────────────────────┬───────────────────────────────┘
+                      │ implements
+                      ▼
+┌─────────────────────────────────────────────────────┐
+│           Zig Implementation                         │
+│      (implementations/zig/src/bridge.zig)           │
+│                                                      │
+│  OR                                                  │
+│                                                      │
+│           Rust Implementation                        │
+│      (implementations/rust/ - help wanted)          │
+└─────────────────────────────────────────────────────┘
+----
+
+=== Key Design Decisions
+
+==== 1. VBytes Instead of NUL-Terminated Strings
+
+[source,c]
+----
+typedef struct VBytes {
+    const uint8_t* ptr;
+    size_t len;
+} VBytes;
+----
+
+Bebop payloads may contain embedded NULs. Assuming NUL-termination would
+corrupt data silently. `VBytes` (pointer + length) handles all byte sequences correctly.
+
+==== 2. Context-Based Allocation
+
+[source,c]
+----
+BebopCtx* ctx = bebop_ctx_new();   // Create arena
+bebop_decode_sensor_reading(ctx, data, len, &out);  // Decode into arena
+bebop_ctx_reset(ctx);              // Reuse arena (high throughput)
+bebop_ctx_free(ctx);               // Release all memory
+----
+
+All allocations are owned by a context. This:
+
+* Avoids global state (thread-safe)
+* Enables arena allocation (fast reset for streaming data)
+* Makes ownership explicit (no "who frees this?" ambiguity)
+
+==== 3. Error Codes + Messages
+
+[source,c]
+----
+typedef struct VSensorReading {
+    // ... data fields ...
+    int32_t error_code;
+    const char* error_message;  // Owned by ctx
+} VSensorReading;
+----
+
+Errors return negative codes and human-readable messages, enabling both
+programmatic handling and debugging.
+
+== Integration with Kaldor-IIoT
+
+Bebop-V-FFI is designed as infrastructure for the
+https://github.com/hyperpolymath/kaldor-iiot[Kaldor IIoT] ecosystem:
+
+[source]
+----
+┌─────────────────┐     Bebop Binary      ┌─────────────────┐
+│  V Firmware     │◄────────────────────►│  Deno Backend   │
+│  (ESP32-C6)     │    ~8 bytes/msg       │  (TypeScript)   │
+└────────┬────────┘                       └────────┬────────┘
+         │                                         │
+         │  Matter Protocol                        │  WASM
+         │                                         │
+         ▼                                         ▼
+┌─────────────────┐                       ┌─────────────────┐
+│  Gateway Node   │                       │  TimescaleDB    │
+│  (RISC-V SBC)   │                       │  (Time-series)  │
+└─────────────────┘                       └─────────────────┘
+----
+
+Sensor data (temperature, humidity, loom status, spinning metrics) flows
+from edge devices through Bebop-serialized messages, decoded/encoded via
+this FFI layer.
+
+== Plug-Compatible Implementations
+
+The C ABI enables multiple implementations:
+
+[cols="1,1,3"]
+|===
+|Language |Status |Notes
+
+|Zig
+|Stub
+|Primary implementation, in development
+
+|Rust
+|Help wanted
+|`staticlib`/`cdylib`, same ABI
+
+|C
+|Possible
+|Wrap Bebop's native C runtime
+
+|Go
+|Possible
+|CGo with careful memory management
+|===
+
+V applications don't care which implementation provides the `.so`—they link
+against the same symbols with the same semantics.
+
+== Performance Characteristics
+
+=== Target Metrics
+
+[cols="2,1,2"]
+|===
+|Operation |Target |Notes
+
+|Decode SensorReading
+|<10μs
+|Zero-copy where possible
+
+|Encode SensorReading
+|<10μs
+|Pre-sized buffers
+
+|Context reset
+|<1μs
+|Arena pointer reset
+
+|Library size
+|<50KB
+|Stripped release build
+|===
+
+=== Why This Matters for IIoT
+
+At 1000 sensor readings/second:
+
+* 10μs decode = 1% CPU for serialization
+* Remaining 99% for business logic, networking, sleep
+
+For battery-powered devices, this efficiency translates directly to battery life.
+
+== Future Work
+
+=== Short Term
+
+* Complete Zig implementation
+* Golden test vectors
+* CI matrix (Linux/macOS, x86_64/aarch64)
+
+=== Medium Term
+
+* Rust plug-compatible implementation
+* WASM target for browser/Deno
+* Fuzz testing
+
+=== Long Term
+
+* Formal verification of ABI stability
+* Integration with Bebop schema registry
+* Compression layer (LZ4)
+
+== Conclusion
+
+Bebop-V-FFI demonstrates a modern approach to language bindings:
+
+1. *Define the contract first* (C ABI as documentation)
+2. *Implement in modern languages* (Zig, not C)
+3. *Target practical use cases* (IIoT edge computing)
+4. *Enable ecosystem growth* (plug-compatible implementations)
+
+By treating the FFI boundary as the core deliverable, we create a stable
+foundation that V applications can rely on while implementations evolve.
+
+== References
+
+* https://bebop.sh[Bebop] - Binary serialization format
+* https://vlang.io[V Language] - Systems programming language
+* https://ziglang.org[Zig] - Modern systems language
+* https://github.com/hyperpolymath/kaldor-iiot[Kaldor IIoT] - Parent ecosystem
+* https://github.com/hyperpolymath/bunsenite[Bunsenite] - Similar FFI architecture
+
+---
+
+_"Microseconds matter when you're weaving the future."_

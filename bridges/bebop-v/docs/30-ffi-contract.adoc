@@ -1,0 +1,19 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2025 Hyperpolymath Contributors
+= FFI Contract
+
+This repo defines a stable C ABI in `include/bebop_v_ffi.h`. V code uses that ABI
+via `v/bebop_bridge.v`. Implementations (Zig/Rust) must exactly match the header.
+
+== Key Rules
+
+* Do *not* pass payload strings as NUL-terminated C strings.
+  Use `VBytes` (`ptr + len`).
+
+* Memory ownership is explicit:
+** Decode allocates outputs from a context-owned arena/allocator
+** Outputs remain valid until freed/reset via the context
+
+* Prefer `u32` counts/lengths where possible for protocol-aligned values.
+
+* Errors are returned via `int32_t` status codes plus an optional message.

@@ -1,0 +1,16 @@
+.{
+    .name = "idris2_zig_ffi",
+    .version = "0.1.0",
+    .minimum_zig_version = "0.13.0",
+
+    .dependencies = .{},
+
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "include",
+        "LICENSE",
+        "README.adoc",
+    },
+}

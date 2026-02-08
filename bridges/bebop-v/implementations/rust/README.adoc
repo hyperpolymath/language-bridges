@@ -1,0 +1,26 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2025 Hyperpolymath Contributors
+= Rust Implementation (help wanted)
+
+This directory is a placeholder for a plug-compatible Rust implementation.
+
+== Requirements
+
+* Implement the ABI in `../../include/bebop_v_ffi.h`
+* Use `VBytes` (ptr+len) for all payload strings/bytes
+* Provide `BebopCtx` for ownership/lifetime control (no global state)
+* Match golden vectors under `../../test-vectors/`
+
+== Suggested Crate Setup
+
+[source,toml]
+----
+[lib]
+crate-type = ["staticlib", "cdylib"]
+
+[dependencies]
+libc = "0.2"
+----
+
+* Use `libc` for C types
+* Use a maintained Bebop Rust library OR invoke canonical tooling if preferred

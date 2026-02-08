@@ -1,0 +1,74 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 Hyperpolymath Contributors
+#
+# mustfile - Hyperpolymath project requirements
+# See: https://github.com/hyperpolymath/mustfile
+#
+# These are non-negotiable requirements for this repository.
+# CI will fail if any MUST is violated.
+
+[project]
+name = "bebop-v-ffi"
+version = "0.0.1"
+tier = "infrastructure"
+
+[must]
+# Code quality
+have_spdx_headers = true
+have_descriptive_names = true
+no_python = true
+no_typescript = true  # use ReScript if needed
+
+# Documentation
+have_readme = true
+have_roadmap = true
+have_contributing = true
+have_security_md = true
+
+# RSR compliance
+have_justfile = true
+have_well_known = true
+have_scm_files = true
+
+# Build reproducibility
+have_guix_or_nix = false  # TODO: add later
+have_lockfile = false     # Zig doesn't use lockfiles
+
+# Security
+no_secrets_in_repo = true
+have_branch_protection = true
+
+[should]
+# Nice to have
+have_changelog = false
+have_fuzz_tests = false
+have_benchmarks = false
+have_ci_matrix = false
+
+[files]
+required = [
+    "README.adoc",
+    "ROADMAP.adoc",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "LICENSE.txt",
+    "justfile",
+    "META.scm",
+    "ECOSYSTEM.scm",
+    "STATE.scm",
+    ".well-known/security.txt",
+]
+
+optional = [
+    "CHANGELOG.md",
+    "guix.scm",
+    "flake.nix",
+]
+
+forbidden = [
+    "Makefile",
+    "*.pyc",
+    "*.py",
+    "__pycache__/",
+    "node_modules/",
+]

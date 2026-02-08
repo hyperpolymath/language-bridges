@@ -1,0 +1,107 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+= OCaml-Zig-FFI
+:toc:
+:toclevels: 3
+
+OCaml bindings for calling Zig libraries via FFI.
+
+== Overview
+
+This library provides type-safe OCaml bindings to Zig libraries.
+Zig exports C-compatible functions that OCaml can call through
+its C FFI mechanism using `ctypes` or `external` declarations.
+
+== Architecture
+
+----
+OCaml → Ctypes → Zig (C ABI)
+----
+
+Using the `ctypes` library for high-level, type-safe FFI.
+
+== Installation
+
+[source,bash]
+----
+opam install ocaml-zig-ffi
+----
+
+Or add to your `dune-project`:
+
+[source]
+----
+(depends
+  (ocaml-zig-ffi (>= 0.1)))
+----
+
+== Usage
+
+=== Using Ctypes
+
+[source,ocaml]
+----
+open Zig_ffi
+
+(* Load the library *)
+let lib = Zig_ffi.load "./libmyzig.so"
+
+(* Call functions *)
+let result = Zig_ffi.add lib 2 3
+(* result = 5 *)
+----
+
+=== Low-Level External Declarations
+
+[source,ocaml]
+----
+external add : int -> int -> int = "zig_add"
+external multiply : int -> int -> int = "zig_multiply"
+----
+
+== Building Zig Libraries for OCaml
+
+Your Zig code must export C-compatible functions:
+
+[source,zig]
+----
+// mylib.zig
+export fn add(a: i32, b: i32) callconv(.C) i32 {
+    return a + b;
+}
+----
+
+Build as shared library:
+
+[source,bash]
+----
+zig build-lib -dynamic -O ReleaseFast mylib.zig
+----
+
+== Type Mappings
+
+|===
+| OCaml Type | Zig Type | Ctypes Type
+
+| `int` | `i32` / `i64` | `int`
+| `int32` | `i32` | `int32_t`
+| `int64` | `i64` | `int64_t`
+| `float` | `f64` | `double`
+| `string` | `[*:0]const u8` | `string`
+| `bytes` | `[*]u8` | `ocaml_bytes`
+|===
+
+== Examples
+
+See the `examples/` directory for complete working examples.
+
+== RSR Compliance
+
+This library follows the Rhodium Standard Repository guidelines:
+
+* OCaml for AffineScript compiler
+* Zig for performance-critical FFI
+* No C wrapper code required
+
+== License
+
+PMPL-1.0-or-later

@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# humanstxt.org
+
+/* TEAM */
+Maintainer: Hyperpolymath
+Site: https://github.com/hyperpolymath
+
+/* THANKS */
+Bebop Team - https://bebop.sh
+V Language Community - https://vlang.io
+Kaldor Contributors - https://github.com/hyperpolymath/kaldor-iiot
+
+/* SITE */
+Last update: 2025-12-24
+Standards: RSR Bronze, TPCF Perimeter 3
+Software: V, Bebop, C

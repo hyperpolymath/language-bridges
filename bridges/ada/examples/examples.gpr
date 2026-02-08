@@ -1,0 +1,35 @@
+-- SPDX-License-Identifier: AGPL-3.0-or-later
+-- Examples Project File
+
+with "../ada_zig_ffi.gpr";
+
+project Examples is
+
+   for Source_Dirs use (".");
+   for Object_Dir use "obj";
+   for Exec_Dir use "bin";
+
+   for Main use ("basic_example.adb", "callback_example.adb", "safety_example.adb");
+
+   package Compiler is
+      for Default_Switches ("Ada") use
+        ("-gnat2022",        -- Ada 2022
+         "-gnatwa",          -- All warnings
+         "-gnatyM120",       -- Max line length 120
+         "-gnata",           -- Enable assertions
+         "-gnatVa",          -- Validity checks
+         "-O2");             -- Optimization
+   end Compiler;
+
+   package Linker is
+      for Default_Switches ("Ada") use
+        ("-L../zig-lib/zig-out/lib",
+         "-lzigffi",
+         "-Wl,-rpath,../zig-lib/zig-out/lib");
+   end Linker;
+
+   package Binder is
+      for Default_Switches ("Ada") use ("-E");
+   end Binder;
+
+end Examples;

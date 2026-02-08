@@ -1,0 +1,131 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2025 Hyperpolymath Contributors
+= Bebop-V-FFI Examples
+:toc:
+
+== Overview
+
+This directory contains examples demonstrating how to use the Bebop-V-FFI library.
+
+== Prerequisites
+
+Build the Zig library first:
+
+[source,bash]
+----
+cd implementations/zig
+zig build -Doptimize=ReleaseFast
+----
+
+This produces:
+
+* `zig-out/lib/libmain.so` (shared library)
+* `zig-out/lib/libmain.a` (static library)
+
+== Examples
+
+=== decode_sensor.zig
+
+A pure Zig example demonstrating how to decode a `SensorReading` message from Bebop wire format.
+
+.Build and Run
+[source,bash]
+----
+cd implementations/zig
+zig build
+zig build run-example
+----
+
+Or run directly:
+[source,bash]
+----
+zig run examples/decode_sensor.zig --mod bridge:implementations/zig/src/bridge.zig --mod abi:implementations/zig/src/abi.zig --deps bridge,abi
+----
+
+.Expected Output
+----
+=== Bebop-V-FFI Example: Decode SensorReading (Zig) ===
+
+ABI Version: 1.0.0
+
+Wire data size: 68 bytes
+Wire data (hex): 0100943577...00
+
+Decoded SensorReading:
+  timestamp: 2000000000
+  sensor_id: "temp-001"
+  sensor_type: 1 (Temperature)
+  value: 23.50
+  unit: "C"
+  location: "floor-1"
+  metadata (1 entries):
+    "status": "ok"
+
+Success!
+----
+
+== For C/C++ Consumers
+
+If you need to use the library from C/C++, include the header from `include/bebop_v_ffi.h`:
+
+[source,c]
+----
+#include "bebop_v_ffi.h"
+
+int main(void) {
+    BebopCtx* ctx = bebop_ctx_new();
+    // ... use API ...
+    bebop_ctx_free(ctx);
+    return 0;
+}
+----
+
+Link against the compiled library:
+
+[source,bash]
+----
+gcc -o myapp myapp.c -L./implementations/zig/zig-out/lib -lmain
+----
+
+== Wire Format Reference
+
+Bebop messages use a field-indexed wire format:
+
+[source]
+----
+[field_index: u8][field_data...][0x00: end]
+----
+
+Field types:
+
+* `uint64`: 8 bytes little-endian
+* `uint16`: 2 bytes little-endian
+* `float64`: 8 bytes IEEE 754 little-endian
+* `string`: 4-byte length (u32 LE) + UTF-8 bytes (no NUL terminator)
+* `map<K,V>`: 4-byte count (u32 LE) + key-value pairs
+
+See `../test-vectors/sensor_reading_001.json` for annotated wire format examples.
+
+== ABI Versioning
+
+Check the library version at runtime:
+
+[source,zig]
+----
+const version = bebop_version();
+const major = (version >> 16) & 0xFF;
+const minor = (version >> 8) & 0xFF;
+const patch = version & 0xFF;
+----
+
+The ABI follows semver: 1.x.x guarantees backwards compatibility.
+
+== Language Bindings
+
+|===
+| Language | Status | Location
+
+| Zig | Native | `implementations/zig/src/`
+| V | Bindings | `v/`
+| C/C++ | Via header | `include/bebop_v_ffi.h`
+|===

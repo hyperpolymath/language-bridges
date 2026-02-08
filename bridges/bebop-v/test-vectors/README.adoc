@@ -1,0 +1,37 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2025 Hyperpolymath Contributors
+= Golden Test Vectors
+
+This directory contains golden test vectors for validating Bebop encode/decode implementations.
+
+== Format
+
+Each `.json` file contains:
+
+* `name` - Unique identifier
+* `description` - What this tests
+* `schema` - Bebop message type
+* `input` - Structured input data
+* `wire_bytes_hex` - Expected Bebop wire format (hex-encoded)
+* `expected_decode` - Expected output after decode
+* `round_trip` - Whether encode(decode(bytes)) == bytes
+
+== Generating Wire Bytes
+
+Use `bebopc` to generate canonical wire bytes:
+
+[source,bash]
+----
+# Generate test data using the Bebop CLI
+bebopc encode --schema schemas/sensors.bop --type SensorReading --json input.json
+----
+
+== Adding New Vectors
+
+1. Create a new `.json` file following the format above
+2. Generate wire bytes using `bebopc`
+3. Run tests: `just test`
+
+== Vector Files
+
+* `sensor_reading_001.json` - Basic temperature sensor reading

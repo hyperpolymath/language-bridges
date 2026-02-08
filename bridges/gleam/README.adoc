@@ -1,0 +1,112 @@
+image:https://img.shields.io/badge/License-PMPL--1.0-blue.svg[License: PMPL-1.0,link="https://github.com/hyperpolymath/palimpsest-license"]
+
+// SPDX-License-Identifier: PMPL-1.0-or-later
+= Gleam-Zig-FFI
+
+
+
+:toc:
+:toclevels: 3
+
+Gleam bindings for calling Zig libraries via FFI.
+
+== Overview
+
+This library provides a type-safe way to call Zig code from Gleam.
+Zig exports C-compatible functions that Gleam can call through
+its FFI mechanism.
+
+== Architecture
+
+=== On BEAM (Erlang VM)
+
+----
+Gleam → Erlang NIF → Zig (C ABI)
+----
+
+Uses Zigler for direct Zig-to-BEAM integration.
+
+=== On JavaScript
+
+----
+Gleam → JavaScript FFI → Deno dlopen → Zig (C ABI)
+----
+
+Uses Deno FFI for loading Zig shared libraries.
+
+== Installation
+
+[source,bash]
+----
+# Add to gleam.toml
+[dependencies]
+gleam_zig_ffi = "~> 0.1"
+----
+
+== Usage
+
+=== Defining External Functions (BEAM)
+
+[source,gleam]
+----
+// src/my_zig_lib.gleam
+
+@external(erlang, "my_zig_nif", "add")
+pub fn add(a: Int, b: Int) -> Int
+
+@external(erlang, "my_zig_nif", "multiply")
+pub fn multiply(a: Int, b: Int) -> Int
+----
+
+=== Defining External Functions (JavaScript)
+
+[source,gleam]
+----
+// src/my_zig_lib.gleam
+
+@external(javascript, "./ffi.mjs", "add")
+pub fn add(a: Int, b: Int) -> Int
+----
+
+== Building Zig Libraries
+
+Your Zig code must export C-compatible functions:
+
+[source,zig]
+----
+// mylib.zig
+export fn add(a: i32, b: i32) callconv(.C) i32 {
+    return a + b;
+}
+----
+
+For BEAM, use Zigler to create NIFs directly.
+For JavaScript, build as shared library.
+
+== Type Mappings
+
+|===
+| Gleam Type | Zig Type | Notes
+
+| `Int` | `i64` / `i32` | Platform dependent
+| `Float` | `f64` | 64-bit float
+| `Bool` | `bool` | Boolean
+| `String` | `[*:0]const u8` | Null-terminated
+| `BitArray` | `[*]u8` + `usize` | Pointer + length
+|===
+
+== Examples
+
+See the `examples/` directory for complete working examples.
+
+== RSR Compliance
+
+This library follows the Rhodium Standard Repository guidelines:
+
+* Gleam for backend services
+* Zig for performance-critical FFI
+* No C wrapper code required
+
+== License
+
+PMPL-1.0-or-later

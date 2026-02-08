@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Security policy for bebop-v-ffi
+# See: https://securitytxt.org/
+
+Contact: https://github.com/hyperpolymath/bebop-v-ffi/security/advisories/new
+Expires: 2026-12-31T23:59:59.000Z
+Preferred-Languages: en
+Canonical: https://github.com/hyperpolymath/bebop-v-ffi/.well-known/security.txt
+Policy: https://github.com/hyperpolymath/bebop-v-ffi/blob/main/SECURITY.md

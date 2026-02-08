@@ -1,0 +1,27 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2025 Hyperpolymath Contributors
+//
+// sensors.bop - Core IIoT sensor message types
+
+enum SensorType : uint16 {
+  Temperature = 1
+  Humidity = 2
+  Pressure = 3
+  Vibration = 4
+}
+
+message SensorReading {
+  timestamp: uint64;
+  sensorId: string;
+  sensorType: SensorType;
+  value: float64;
+  unit: string;
+  location: string;
+  metadata: map<string, string>;
+}
+
+message BatchReadings {
+  readings: SensorReading[];
+  batchId: guid;
+  compressed: bool;
+}

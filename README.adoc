@@ -1,0 +1,24 @@
+= language-bridges
+// SPDX-License-Identifier: PMPL-1.0-or-later
+:author: Jonathan D.A. Jewell <jonathan.jewell@open.ac.uk>
+
+Zig FFI bridges for cross-language interoperability.
+
+== Bridges
+
+Language-to-language FFI bindings via Zig's C ABI compatibility:
+
+* Ada ↔ Zig
+* ATS2 ↔ Zig
+* Bebop/V ↔ Zig
+* C ↔ Zig
+* Gleam ↔ Zig
+* Idris2 ↔ Zig
+* OCaml ↔ Zig
+* Rust ↔ Zig
+* Swift ↔ Zig
+* Polyglot (multi-language bridge)
+
+== License
+
+PMPL-1.0-or-later

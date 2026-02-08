@@ -1,0 +1,22 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2025 Hyperpolymath Contributors
+= Contributing Implementations
+
+Implementations live under `implementations/<lang>/`.
+
+The goal: satisfy `include/bebop_v_ffi.h` exactly, using a canonical Bebop implementation.
+
+== Common Pitfalls
+
+* Assuming NUL-terminated strings (use `VBytes`)
+* Mismatched struct packing/alignment
+* Returning pointers to stack memory
+* TCP framing assumptions (must be length-prefixed)
+* GUID/UUID byte ordering differences
+
+== Suggested Milestones
+
+1. Implement `BebopCtx` create/free/reset
+2. Implement `bebop_decode_sensor_reading`
+3. Implement `bebop_encode_batch_readings`
+4. Add golden vector tests

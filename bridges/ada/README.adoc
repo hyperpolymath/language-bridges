@@ -1,0 +1,183 @@
+image:https://img.shields.io/badge/License-MPL_2.0-blue.svg[MPL-2.0-or-later,link="https://opensource.org/licenses/MPL-2.0"]
+
+== License & Philosophy
+
+This project must declare **MPL-2.0-or-later** for platform/tooling compatibility.
+
+Philosophy: **Palimpsest**. The Palimpsest-MPL (PMPL) text is provided in `license/PMPL-1.0.txt`, and the canonical source is the palimpsest-license repository.
+
+// SPDX-License-Identifier: MPL-2.0-or-later
+= Ada-Zig-FFI
+
+
+
+:toc:
+:toclevels: 3
+
+Ada bindings for calling Zig libraries via FFI.
+
+== Overview
+
+This library provides type-safe Ada bindings to Zig libraries.
+Zig exports C-compatible functions that Ada can call through
+its `Interfaces.C` mechanism.
+
+== Architecture
+
+----
+Ada → Interfaces.C → Zig (C ABI)
+----
+
+Ada's `pragma Import(C, ...)` can directly call C-compatible
+functions exported by Zig shared libraries.
+
+== Usage
+
+=== Importing Zig Functions
+
+[source,ada]
+----
+with Interfaces.C;
+use Interfaces.C;
+
+package Zig_Lib is
+   -- Import Zig function
+   function Add (A, B : int) return int
+      with Import => True,
+           Convention => C,
+           External_Name => "add";
+
+   function Multiply (A, B : int) return int
+      with Import => True,
+           Convention => C,
+           External_Name => "multiply";
+end Zig_Lib;
+----
+
+=== Using the Bindings
+
+[source,ada]
+----
+with Ada.Text_IO;
+with Zig_Lib;
+
+procedure Main is
+   Result : Interfaces.C.int;
+begin
+   Result := Zig_Lib.Add (2, 3);
+   Ada.Text_IO.Put_Line ("2 + 3 =" & Result'Image);
+end Main;
+----
+
+== Building
+
+=== Building Zig Library
+
+[source,bash]
+----
+cd zig-lib
+zig build -Doptimize=ReleaseFast
+----
+
+=== Building Ada Project
+
+[source,bash]
+----
+gprbuild -P ada_zig_ffi.gpr
+----
+
+=== Linking
+
+[source,ada]
+----
+-- In your .gpr file:
+package Linker is
+   for Default_Switches ("Ada") use ("-L./zig-lib/zig-out/lib", "-lzigffi");
+end Linker;
+----
+
+== Type Mappings
+
+|===
+| Ada Type | Zig Type | Notes
+
+| `Interfaces.C.int` | `c_int` / `i32` | C int
+| `Interfaces.C.long` | `c_long` / `i64` | C long
+| `Interfaces.C.unsigned` | `c_uint` / `u32` | C unsigned
+| `Interfaces.C.double` | `f64` | 64-bit float
+| `Interfaces.C.char_array` | `[*:0]const u8` | String
+| `System.Address` | `*anyopaque` | Raw pointer
+|===
+
+== Safety Considerations
+
+Ada's strong typing provides additional safety when calling Zig code:
+
+* Type mismatches are caught at compile time
+* Range checks can validate Zig return values
+* Pre/postconditions can wrap FFI calls
+
+== Examples
+
+The `examples/` directory contains complete working examples:
+
+=== Basic Example
+
+Demonstrates calling Zig functions from Ada:
+
+[source,bash]
+----
+cd examples
+gprbuild -P examples.gpr basic_example.adb
+./bin/basic_example
+----
+
+Features demonstrated:
+* Version information retrieval
+* Arithmetic operations (add, multiply)
+* Mathematical functions (factorial, fibonacci)
+* String operations
+
+=== Callback Example
+
+Demonstrates bidirectional FFI with callbacks from Zig to Ada:
+
+[source,bash]
+----
+cd examples
+gprbuild -P examples.gpr callback_example.adb
+./bin/callback_example
+----
+
+Features demonstrated:
+* Registering Ada procedures as callbacks
+* Invoking callbacks from Zig
+* Iterator pattern with Ada-style termination control
+
+=== Safety Example
+
+Demonstrates safety-critical patterns with error handling:
+
+[source,bash]
+----
+cd examples
+gprbuild -P examples.gpr safety_example.adb
+./bin/safety_example
+----
+
+Features demonstrated:
+* Safe division with error callbacks
+* Bounds-checked array access
+* Buffer operations
+
+== RSR Compliance
+
+This library follows the Rhodium Standard Repository guidelines:
+
+* Ada for safety-critical systems
+* Zig for performance-critical FFI
+* No C wrapper code required
+
+== License
+
+PMPL-1.0-or-later

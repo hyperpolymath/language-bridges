@@ -1,0 +1,216 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+= idris2-zig-ffi
+:toc: macro
+:toclevels: 3
+:icons: font
+:source-highlighter: rouge
+
+*Bidirectional Idris 2 to Zig FFI bridge - stable ABI for any Idris 2 project*
+
+image:https://img.shields.io/badge/Idris_2-Supported-blue?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyTDIgN2wxMCA1IDEwLTV6TTIgMTdsMTAgNSAxMC01TTIgMTJsMTAgNSAxMC01Ii8+PC9zdmc+[Idris 2]
+image:https://img.shields.io/badge/Zig-0.13+-orange?logo=zig[Zig]
+image:https://img.shields.io/badge/ABI-Zig-0.13_Stable-orange[Zig ABI]
+image:https://img.shields.io/badge/License-PMPL--1.0-blue.svg[License: PMPL-1.0,link="https://github.com/hyperpolymath/palimpsest-license"]
+
+toc::[]
+
+== Why This Exists
+
+Idris 2 compiles to multiple backends (Scheme, RefC, JavaScript). The RefC backend generates C code, but:
+
+1. **No stable ABI** - Internal structures may change between versions
+2. **Manual memory management** - Must understand Idris GC
+3. **Type marshalling** - Converting Idris types to C types is tedious
+4. **Platform differences** - C compilation varies by platform
+
+This library solves all of these by wrapping the RefC output in Zig, providing:
+
+- **Stable C ABI** - Guaranteed interface that won't break
+- **Automatic memory management** - Zig handles the bridge safely
+- **Type-safe marshalling** - Automatic conversion with compile-time checks
+- **Cross-platform builds** - One build.zig for all targets
+- **WASM support** - Compile to WebAssembly seamlessly
+
+== Architecture
+
+[source]
+----
+┌─────────────────────────────────────────────────────────────────┐
+│                    Your Application                              │
+│         (Python, Rust, Go, JavaScript, etc.)                    │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │ C ABI / WASM
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    idris2-zig-ffi                                │
+│                                                                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │   C Header   │  │ Zig Wrapper  │  │   Memory     │          │
+│  │   Exports    │  │   Layer      │  │   Bridge     │          │
+│  └──────────────┘  └──────────────┘  └──────────────┘          │
+│                                                                  │
+│  • Stable ABI guarantee    • Type-safe marshalling              │
+│  • Version compatibility   • Cross-platform builds              │
+│  • WASM/WASI support      • Automatic cleanup                   │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                 Idris 2 RefC Output                              │
+│           (Your verified Idris 2 library)                        │
+└─────────────────────────────────────────────────────────────────┘
+----
+
+== Quick Start
+
+=== 1. Add as Dependency
+
+In your Zig project's `build.zig.zon`:
+
+[source,zig]
+----
+.dependencies = .{
+    .idris2_zig_ffi = .{
+        .url = "https://github.com/hyperpolymath/idris2-zig-ffi/archive/refs/tags/v0.1.0.tar.gz",
+        .hash = "...",
+    },
+},
+----
+
+=== 2. Compile Your Idris 2 Code
+
+[source,bash]
+----
+# Compile Idris 2 to RefC
+idris2 --cg refc -o mylib MyLib.idr
+
+# This generates build/exec/mylib_app/ with C files
+----
+
+=== 3. Wrap with Zig
+
+[source,zig]
+----
+const std = @import("std");
+const ffi = @import("idris2_zig_ffi");
+
+// Import your Idris-generated C code
+const idris = @cImport({
+    @cInclude("mylib.h");
+});
+
+pub fn safeDiv(a: i64, b: i64) ?i64 {
+    // Call Idris function through FFI bridge
+    const result = ffi.call(idris.MyLib_safeDiv, .{ a, b });
+    return ffi.fromIdrisOption(i64, result);
+}
+----
+
+=== 4. Build
+
+[source,bash]
+----
+zig build -Dtarget=x86_64-linux      # Native Linux
+zig build -Dtarget=wasm32-wasi       # WASM
+zig build -Dtarget=aarch64-macos     # macOS ARM
+zig build -Dtarget=x86_64-windows    # Windows
+----
+
+== API Reference
+
+=== Memory Management
+
+[source,zig]
+----
+// Allocate memory that Idris GC can track
+const ptr = ffi.alloc(T, count);
+defer ffi.free(ptr);
+
+// Create a managed string from Zig
+const idris_str = ffi.toIdrisString("hello");
+defer ffi.freeIdrisString(idris_str);
+
+// Convert Idris string to Zig slice
+const zig_str = ffi.fromIdrisString(idris_str);
+----
+
+=== Type Conversions
+
+[cols="1,1,2"]
+|===
+| Idris Type | Zig Type | Function
+
+| `Int` | `i64` | `ffi.toInt` / `ffi.fromInt`
+| `Integer` | `*BigInt` | `ffi.toBigInt` / `ffi.fromBigInt`
+| `String` | `[]const u8` | `ffi.toString` / `ffi.fromString`
+| `List a` | `[]T` | `ffi.toSlice` / `ffi.fromSlice`
+| `Maybe a` | `?T` | `ffi.toOption` / `ffi.fromOption`
+| `Either a b` | `union` | `ffi.toEither` / `ffi.fromEither`
+| `(a, b)` | `struct` | `ffi.toPair` / `ffi.fromPair`
+|===
+
+=== Error Handling
+
+[source,zig]
+----
+// Idris functions that return Either Error Value
+const result = ffi.callChecked(idris.parseJson, .{json_str});
+
+switch (result) {
+    .ok => |value| {
+        // Use value
+    },
+    .err => |e| {
+        std.log.err("Parse error: {s}", .{ffi.getErrorMessage(e)});
+    },
+}
+----
+
+=== WASM Support
+
+[source,zig]
+----
+// In build.zig
+const wasm = b.addSharedLibrary(.{
+    .name = "mylib",
+    .root_source_file = .{ .path = "src/main.zig" },
+    .target = .{ .cpu_arch = .wasm32, .os_tag = .wasi },
+});
+wasm.addModule("idris2_zig_ffi", ffi_module);
+
+// Export functions for JavaScript
+export fn safeDiv(a: i64, b: i64) i64 {
+    return ffi.call(idris.safeDiv, .{ a, b }) orelse 0;
+}
+----
+
+== Supported Targets
+
+|===
+| Platform | Architecture | Status
+
+| Linux | x86_64, aarch64 | ✓ Full support
+| macOS | x86_64, aarch64 | ✓ Full support
+| Windows | x86_64 | ✓ Full support
+| WASM | wasm32-wasi | ✓ Full support
+| WASM | wasm32-freestanding | ✓ Browser support
+| FreeBSD | x86_64 | ✓ Full support
+| iOS | aarch64 | Experimental
+| Android | aarch64 | Experimental
+|===
+
+== Projects Using This
+
+- https://github.com/hyperpolymath/proven[proven] - Verified safe operations library
+
+== Contributing
+
+See link:CONTRIBUTING.adoc[CONTRIBUTING.adoc].
+
+== License
+
+Palimpsest-MPL-1.0. See link:LICENSE[LICENSE].
+
+---
+
+*Make your verified Idris 2 code accessible to every language.*

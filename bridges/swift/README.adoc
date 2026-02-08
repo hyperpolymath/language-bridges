@@ -1,0 +1,237 @@
+image:https://img.shields.io/badge/License-PMPL--1.0-blue.svg[License: PMPL-1.0,link="https://github.com/hyperpolymath/palimpsest-license"]
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
+
+= Swift-Zig FFI
+:toc:
+:toc-placement!:
+
+Bidirectional interop between Swift and Zig via auto-generated C ABI bridge.
+
+toc::[]
+
+== Overview
+
+Swift-Zig FFI provides a reusable pattern for Swift ↔ Zig communication:
+
+* **Zero hand-written C** - bridging header is auto-generated from Zig
+* **Bidirectional callbacks** - Swift → Zig and Zig → Swift
+* **Type-safe** - structs, strings, bytes with proper memory management
+* **Cross-platform** - iOS, macOS, watchOS, tvOS
+
+=== Architecture
+
+[source]
+----
+┌─────────────────────────────────────┐
+│         Swift Application           │
+├─────────────────────────────────────┤
+│   SwiftZigFFI.swift (Swift wrapper) │
+├─────────────────────────────────────┤
+│   SwiftZigFFI.h (auto-generated)    │  ← C ABI declarations
+├─────────────────────────────────────┤
+│   libswift_zig_ffi.a (Zig library)  │  ← Implementation
+└─────────────────────────────────────┘
+----
+
+== Quick Start
+
+=== Build the library
+
+[source,bash]
+----
+# Build for host (development/testing)
+zig build
+
+# Build for macOS ARM64
+zig build -Dtarget=aarch64-macos
+
+# Build for iOS device
+zig build -Dtarget=aarch64-ios
+
+# Build for iOS Simulator
+zig build -Dtarget=aarch64-ios-simulator
+
+# Run tests
+zig build test
+
+# Regenerate bridging header (after modifying lib.zig)
+zig build gen-header
+----
+
+=== Integrate with Xcode
+
+1. Add `zig-out/lib/libswift_zig_ffi.a` to your target
+2. Add `include/` to Header Search Paths
+3. Set `include/SwiftZigFFI.h` as your Objective-C Bridging Header
+4. Add `swift/SwiftZigFFI.swift` to your project
+
+=== Example Usage
+
+[source,swift]
+----
+import Foundation
+
+// Check version
+print("Zig library version: \(zigLibraryVersionString)")
+
+// Create context
+let context = try ZigContext()
+
+// Transform data
+let input = ZigBytes("hello world")
+let output = try transformData(context: context, input: input)
+print(String(data: output, encoding: .utf8)!)  // "HELLO WORLD"
+
+// Process with progress
+processData(
+    context: context,
+    input: ZigBytes("large data here"),
+    progress: { current, total in
+        print("Progress: \(current)/\(total)")
+        return true  // Continue processing
+    },
+    completion: { result in
+        if result.isSuccess {
+            print("Done!")
+        } else {
+            print("Error: \(result.error!)")
+        }
+    }
+)
+
+// Register for Zig → Swift events
+registerEventHandler { eventType, data in
+    print("Event \(eventType): \(data.count) bytes")
+}
+----
+
+== API Reference
+
+=== Types
+
+[cols="1,3"]
+|===
+| Type | Description
+
+| `ZigContext`
+| Manages library state and memory. Create one per thread/task.
+
+| `ZigBytes`
+| Wrapper for byte buffers. Initialize from `Data` or `String`.
+
+| `ZigResult`
+| Result of operations. Contains `isSuccess`, `error`, and `data`.
+
+| `ZigError`
+| Error enum with cases for all library errors.
+|===
+
+=== Functions
+
+[cols="2,3"]
+|===
+| Function | Description
+
+| `transformData(context:input:)`
+| Transform data (example: uppercase). Returns `Data`.
+
+| `processData(context:input:progress:completion:)`
+| Process data with progress and completion callbacks.
+
+| `registerEventHandler(_:)`
+| Register for Zig → Swift event notifications.
+
+| `registerErrorHandler(_:)`
+| Register for Zig → Swift error notifications.
+|===
+
+=== Callbacks
+
+[cols="2,3"]
+|===
+| Direction | Callbacks
+
+| Swift → Zig
+| `ProgressHandler`, `ResultHandler` (passed to functions)
+
+| Zig → Swift
+| `EventHandler`, `ErrorHandler` (registered globally)
+|===
+
+== Memory Management
+
+* **ZigContext** owns arena allocations - reset with `context.reset()` to free
+* **ZigBytes** borrows data - ensure source `Data` stays alive during use
+* **Callbacks** are bridged safely - closures captured properly
+
+== Adding Custom Functions
+
+1. Add function in `src/lib.zig`:
++
+[source,zig]
+----
+export fn szf_my_function(ctx: ?*SzfContext, input: SzfBytes) callconv(.c) i32 {
+    // Implementation
+    return SZF_OK;
+}
+----
+
+2. Regenerate header:
++
+[source,bash]
+----
+zig build gen-header
+----
+
+3. Add Swift wrapper in `swift/SwiftZigFFI.swift`:
++
+[source,swift]
+----
+public func myFunction(context: ZigContext, input: ZigBytes) throws {
+    let result = input.withCBytes { bytes in
+        szf_my_function(context.pointer, bytes)
+    }
+    guard result == SZF_OK else {
+        throw ZigError.from(code: result)
+    }
+}
+----
+
+== Cross-Platform Builds
+
+=== iOS Universal Binary
+
+[source,bash]
+----
+# Build for device and simulator
+zig build -Dtarget=aarch64-ios -Doptimize=ReleaseFast
+mv zig-out/lib/libswift_zig_ffi.a libswift_zig_ffi-ios.a
+
+zig build -Dtarget=aarch64-ios-simulator -Doptimize=ReleaseFast
+mv zig-out/lib/libswift_zig_ffi.a libswift_zig_ffi-sim.a
+
+# Create XCFramework
+xcodebuild -create-xcframework \
+    -library libswift_zig_ffi-ios.a \
+    -library libswift_zig_ffi-sim.a \
+    -output SwiftZigFFI.xcframework
+----
+
+=== macOS Universal Binary
+
+[source,bash]
+----
+zig build -Dtarget=aarch64-macos -Doptimize=ReleaseFast
+mv zig-out/lib/libswift_zig_ffi.a libswift_zig_ffi-arm64.a
+
+zig build -Dtarget=x86_64-macos -Doptimize=ReleaseFast
+mv zig-out/lib/libswift_zig_ffi.a libswift_zig_ffi-x64.a
+
+lipo -create libswift_zig_ffi-arm64.a libswift_zig_ffi-x64.a \
+    -output libswift_zig_ffi-universal.a
+----
+
+== License
+
+PMPL-1.0-or-later

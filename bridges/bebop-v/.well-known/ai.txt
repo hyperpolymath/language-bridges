@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# AI Policy for bebop-v-ffi
+
+User-agent: *
+Allow: /
+
+# This project welcomes AI-assisted contributions
+# See CLAUDE.md for AI assistant guidelines
+# See CONTRIBUTING.md for contribution process

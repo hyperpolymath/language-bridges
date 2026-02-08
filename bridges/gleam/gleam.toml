@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+
+name = "gleam_zig_ffi"
+version = "0.1.0"
+
+description = "Gleam bindings for Zig FFI - call Zig libraries from Gleam"
+licences = ["AGPL-3.0-or-later"]
+repository = { type = "github", user = "hyperpolymath", repo = "gleam-zig-ffi" }
+
+[dependencies]
+gleam_stdlib = ">= 0.34.0 and < 2.0.0"
+
+[dev-dependencies]
+gleeunit = ">= 1.0.0 and < 2.0.0"
+
+[javascript]
+runtime = "deno"

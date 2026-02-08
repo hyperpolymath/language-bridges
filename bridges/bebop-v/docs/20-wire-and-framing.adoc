@@ -1,0 +1,24 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2025 Hyperpolymath Contributors
+= Wire and Framing
+
+Bebop is a binary serialization format, but TCP is a byte stream. You must
+frame messages so the receiver knows where one message ends and the next begins.
+
+== Recommended Framing
+
+=== Send
+
+* `u32` little-endian payload length
+* followed by `payload_length` bytes of Bebop payload
+
+=== Receive
+
+1. Read 4 bytes
+2. Parse length (little-endian u32)
+3. Read exactly `length` bytes
+4. Pass payload bytes into `bebop_decode_*`
+
+== Examples
+
+See V examples in `v/iiot_server.v` and `v/iiot_client.v`.

@@ -1,0 +1,7 @@
+= Rust ↔ Zig FFI Bridge
+
+Bidirectional FFI between Rust and Zig.
+
+== License
+
+PMLP-1.0-or-later

@@ -1,0 +1,34 @@
+= Zig ↔ ATS2 FFI Bridge
+:toc:
+:toclevels: 3
+
+Bidirectional FFI bridge between Zig and ATS2 with zero C dependencies.
+
+== Overview
+
+This library provides a complete FFI layer for calling ATS2 from Zig and vice versa, using WASI/System V ABI conventions. Demonstrates HKDF key derivation as a reference implementation.
+
+== Features
+
+* *Bidirectional FFI*: Zig calls ATS2, ATS2 calls Zig
+* *Zero C Dependencies*: Direct ABI mapping without C headers
+* *Memory Safe*: Linear types in ATS2, checked allocations in Zig
+* *WASM-Ready*: Compiles to WebAssembly via WASI
+* *Proof Carrying*: ATS2's dependent types provide correctness proofs
+
+== Quick Start
+
+[source,bash]
+----
+# Compile ATS2 library
+patscc -DATS_MEMALLOC_LIBC -o libhkdf.a src/hkdf.dats
+
+# Build Zig WASM module
+zig build-lib -target wasm32-wasi -dynamic -o hkdf.wasm src/hkdf.zig libhkdf.a
+----
+
+== License
+
+image:https://img.shields.io/badge/License-PMPL--1.0-blue.svg[License: PMPL-1.0,link="https://github.com/hyperpolymath/palimpsest-license"]
+
+PMLP-1.0-or-later (Palimpsest License)

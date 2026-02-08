@@ -1,0 +1,8 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+= zig-polyglot-extract-ffi
+
+Zig FFI for document text extraction in i18n workflows.
+
+== License
+
+PMPL-1.0-or-later
